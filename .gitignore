@@ -12,6 +12,7 @@ pip-delete-this-directory.txt
 
 # Javascript / Node
 node_modules/
+.next/
 dist/
 build/
 .eslintcache
@@ -35,3 +36,7 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Docs
+SentinelBrief_Final_Build_Guide.docx
+*.docx

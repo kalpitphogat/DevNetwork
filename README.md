@@ -1,12 +1,45 @@
-# SentinelBrief — Resilient Autonomous Competitive Intelligence Agent
+# SentinelBrief — Resilient Autonomous Competitive Intelligence
 
-A resilient multi-agent intelligence system powered by **Nemotron-70B on Crusoe Cloud**, orchestrated with stateful checkpoints, and hardened by **TrueFoundry AI Gateway** — that autonomously researches competitors and delivers structured briefings.
+> **The competitive intelligence agent that never silently fails** — powered by Nemotron on Crusoe Cloud, hardened by TrueFoundry AI Gateway.
+
+[![DevNetwork Hackathon 2026](https://img.shields.io/badge/DevNetwork-AI%20%2B%20ML%20Hackathon%202026-blueviolet)]()
+[![Nemotron on Crusoe](https://img.shields.io/badge/LLM-Nemotron%2049B%20on%20Crusoe-green)]()
+[![TrueFoundry Gateway](https://img.shields.io/badge/Resilience-TrueFoundry%20AI%20Gateway-orange)]()
 
 ---
 
-## 🏗️ Production Tech Stack & Architecture
+## 💡 Inspiration
 
-SentinelBrief is built to be production-grade and fully resilient to infrastructure failures, utilizing the following architecture:
+Every founder spends **4–6 hours per week** tracking competitors manually — scouring news sites, Reddit threads, job boards, and pricing pages. When they turn to AI agents for help, those agents **fail silently**: returning partial output with no warning, hallucinating claims without sources, and crashing mid-run with no recovery. SentinelBrief was born to solve both problems — delivering autonomous competitive research that is *reliable, verifiable, and resilient*.
+
+## 🔍 What It Does
+
+Give SentinelBrief a company profile and up to **5 competitors**. It autonomously:
+
+1. **Plans** targeted research queries via a multi-step reasoning planner.
+2. **Fetches** intelligence in parallel across **5 independent sources** — Tavily, Google News, Bing News, HackerNews, and Reddit.
+3. **Synthesizes** findings into structured briefings with **VeracityAI confidence tags** (`VERIFIED`, `INFERRED`, `UNVERIFIED`) on every single claim, each backed by source URLs.
+4. **Scores** competitive threats on 5 dimensions and renders an interactive radar chart.
+
+Every LLM call routes through **TrueFoundry AI Gateway** for automatic failover, rate-limit protection, and full observability — so the agent *never silently fails*.
+
+---
+
+## ⚡ Key Features
+
+| Feature | Description |
+|---|---|
+| 🌐 **5-Source Parallel Intelligence** | Tavily + Google News + Bing News + HackerNews + Reddit — researched concurrently for maximum coverage |
+| 🏷️ **VeracityAI Confidence Scoring** | Every claim tagged `[VERIFIED: url]`, `[INFERRED]`, or `[UNVERIFIED]` — no more hallucinated facts |
+| 🛡️ **TrueFoundry-Powered Resilience** | Kill-switch chaos demo, automatic Nemotron → GPT-4o fallback, gateway event logs |
+| 🕸️ **Competitive Threat Radar** | 5-dimension spider chart (Product, Pricing, Hiring, Funding, Market) via Recharts |
+| 📡 **Live Agent Pipeline** | Real-time SSE progress feed — watch every agent node execute live |
+| 💾 **Checkpoint Resume** | Upstash Redis crash recovery — mid-run failures resume from the last completed node |
+| 🗄️ **DB Persistence** | Neon PostgreSQL briefing storage — every report is saved and retrievable |
+
+---
+
+## 🏗️ Architecture
 
 ```
           Vercel [Static Hosting]
@@ -24,76 +57,90 @@ TrueFoundry AI Gateway
 nvidia/nemotron-3-super-49b-v1 (Crusoe Cloud) ──► openai/gpt-4o (Fallback)
 ```
 
-### Infrastructure Mapping:
-1. **Frontend**: Next.js / Vite deployed to **Vercel**
-2. **API Layer**: Python FastAPI deployed to **Render**
-3. **Persistant DB**: PostgreSQL hosted on **Neon**
-4. **Checkpoints & Caching**: Redis hosted on **Upstash**
-5. **Resilience Gateway**: **TrueFoundry AI Gateway** managing inference timeouts and fallback switching.
+**Pipeline**: `Planner Agent` → `5× Parallel Fetcher Agents` → `Synthesizer Agent` → `VeracityAI Scorer` → `Structured Briefing`
 
 ---
 
-## ⚡ Key Features
+## 🧰 Tech Stack
 
-*   **Research Planner**: Generating prioritized multi-agent queries before searching.
-*   **Parallel Fetcher Agents**: 4 specialized scrapers (News, Product, Pricing, Hiring) run concurrently.
-*   **VeracityAI Confidence Scoring**: Claim-level tag evaluations (`[VERIFIED: url]`, `[INFERRED]`).
-*   **Live Checkpoint Resume**: Mid-run crashes automatically resume from the last completed node via Redis state caching.
-*   **Infrastructure Chaos Demo**: Live control panel to inject failover triggers in real-time.
-
----
-
-## 🚀 1-Click Deployment Guide
-
-Follow these steps to deploy SentinelBrief to production in under 5 minutes:
-
-### 1. Database Setup (Neon PostgreSQL)
-1. Register for a free PostgreSQL database at [Neon.tech](https://neon.tech).
-2. Copy your connection string (`postgresql://...`).
-3. Set this as `DATABASE_URL` in your backend environment variables.
-
-### 2. State & Cache Setup (Upstash Redis)
-1. Register for a free serverless Redis cluster at [Upstash.com](https://upstash.com).
-2. Copy your Redis URL (`rediss://...`).
-3. Set this as `REDIS_URL` in your backend environment variables.
-
-### 3. Backend Deployment (Render)
-1. Push your repository to GitHub.
-2. Sign in to [Render.com](https://render.com) and link your GitHub account.
-3. Click **"New" -> "Blueprint"** and select your repository.
-4. Render will read the `render.yaml` specification, create your backend service, and prompt you to input the environment keys:
-   * `DATABASE_URL` (Neon Connection string)
-   * `REDIS_URL` (Upstash connection string)
-   * `TAVILY_API_KEY` (Tavily search API)
-   * `TRUEFOUNDRY_GATEWAY_URL` & `TRUEFOUNDRY_API_KEY` (TrueFoundry Gateway credentials)
-
-### 4. Frontend Deployment (Vercel)
-1. Register/Login at [Vercel.com](https://vercel.com).
-2. Import your GitHub repository.
-3. Select `frontend` as the root directory for the build.
-4. Set environment variables if needed, then hit **Deploy**.
-5. Vercel automatically reads `vercel.json` to proxy all `/api` requests to your Render backend endpoint.
+| Layer | Technology |
+|---|---|
+| **Frontend** | Next.js 15 + React 19 + Recharts |
+| **Backend** | FastAPI + Python 3.12 |
+| **LLM Inference** | Nemotron-49B on Crusoe Cloud (NVIDIA DGX) |
+| **Resilience** | TrueFoundry AI Gateway (failover + observability) |
+| **Search** | Tavily API + Google News + Bing News + HackerNews + Reddit |
+| **State & Cache** | Upstash Redis (checkpoints + queues) |
+| **Database** | Neon PostgreSQL (briefing persistence) |
+| **Deployment** | Vercel (frontend) + Render (backend) |
 
 ---
 
-## 🛠️ Local Development Setup
+## 🔨 How We Built It
 
-1. Copy `.env.example` to `.env` and fill in keys (or set `SENTINELBRIEF_MOCK=true` to run without API keys).
-2. Install & Start Backend:
+We designed SentinelBrief as a **stateful multi-agent pipeline** with crash resilience baked in from day one:
+
+1. **Research Planner** — The Nemotron LLM generates prioritized, competitor-specific search queries before any fetching begins, ensuring targeted coverage rather than generic searches.
+2. **5-Source News Agent** — Five specialized fetcher agents (Tavily, Google News, Bing News, HackerNews, Reddit) run **in parallel** using `asyncio.gather`, each with independent retry logic. If one source is down, the other four still deliver.
+3. **Synthesizer Agent** — Raw results are merged and deduplicated, then fed to Nemotron for structured synthesis into briefing sections (Product, Pricing, Hiring, Funding, Market).
+4. **VeracityAI Scorer** — A dedicated scoring pass tags every claim with confidence levels and source attribution. We use constrained prompting to enforce consistent `[VERIFIED]` / `[INFERRED]` / `[UNVERIFIED]` formatting.
+5. **Chaos Engineering System** — A live control panel lets judges inject failures (kill the LLM connection, spike latency) to demonstrate TrueFoundry Gateway's automatic fallback from Nemotron → GPT-4o in real-time.
+6. **Checkpoint Resume** — Every agent node writes its output to Upstash Redis. If the pipeline crashes at node 3, it resumes from node 3 — not from scratch.
+
+---
+
+## 🧗 Challenges We Faced
+
+- **Consistent confidence tags from LLMs** — Getting Nemotron to reliably output structured `[VERIFIED: url]` tags required multiple prompt engineering iterations and output validation layers.
+- **5 parallel sources without blocking** — Coordinating five independent APIs with different rate limits, response formats, and failure modes into a single async pipeline was a significant engineering challenge.
+- **Checkpoint resume across Redis** — Serializing and deserializing intermediate LangGraph state to Upstash Redis — while handling partial writes and TTL expiry — required careful state management.
+- **Spider chart normalization** — Scoring competitors on 5 dimensions with consistent 0–10 scales from free-form LLM output needed structured extraction and fallback defaults.
+
+---
+
+## 🔮 What's Next
+
+| Phase | Timeline | Goal |
+|---|---|---|
+| 🚀 **Beta Launch** | June 2026 | Onboard 50 founders for weekly automated briefings |
+| 💰 **Monetize** | Q3 2026 | Starter ($49/mo — 3 competitors) and Pro ($199/mo — 10 competitors + alerts) |
+| 🔗 **Expand** | Q4 2026 | CRM integrations (Salesforce, HubSpot), Slack/Teams delivery, PDF export |
+| 🧠 **Deepen** | 2027 | Longitudinal trend analysis, patent monitoring, earnings call summarization |
+
+---
+
+## 🛠️ Built With
+
+`Nemotron` · `Crusoe Cloud` · `TrueFoundry AI Gateway` · `FastAPI` · `Next.js` · `React` · `Recharts` · `Upstash Redis` · `Neon PostgreSQL` · `Tavily API` · `Python` · `TypeScript` · `LangGraph`
+
+---
+
+## 🚀 Quick Start — Local Development
+
+1. **Configure environment** — Copy `.env.example` to `.env` and fill in your keys (or set `SENTINELBRIEF_MOCK=true` to run without API keys).
+
+2. **Start the backend:**
    ```bash
    pip install -r requirements.txt
    python -m uvicorn backend.main:app --reload --port 8000
    ```
-3. Install & Start Frontend:
+
+3. **Start the frontend:**
    ```bash
    cd frontend
    npm install
    npm run dev
    ```
 
+4. Open `http://localhost:3000`, enter a company and competitors, and watch the agent pipeline run live.
+
 ---
 
-## 🏆 sponsor track alignment
+## 🏆 Sponsor Track Alignment
 
-*   **Crusoe Cloud (NVIDIA DGX Track)**: Core reasoning executed using `nvidia/nemotron-3-super-49b-v1` across both Research Planning and Synthesis nodes.
-*   **TrueFoundry (Resilient Agents Track)**: Robust failover, error checkpoints, and event logs routing transparently via TrueFoundry Gateway to protect critical runs.
+- **Crusoe Cloud (NVIDIA DGX Track)** — Core reasoning executed using `nvidia/nemotron-3-super-49b-v1` across both Research Planning and Synthesis nodes. All inference runs on Crusoe Cloud GPU infrastructure.
+- **TrueFoundry (Resilient Agents Track)** — Robust failover, error checkpoints, and event log routing transparently via TrueFoundry AI Gateway to protect critical agent runs. Live chaos demo proves resilience under failure.
+
+---
+
+<p align="center"><b>SentinelBrief</b> — Because competitive intelligence shouldn't fail silently.</p>
