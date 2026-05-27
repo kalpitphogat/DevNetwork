@@ -135,7 +135,7 @@ class GatewayClient:
                        f"Completed in {latency:.0f}ms")
 
             return {
-                "content": response.choices[0].message.content,
+                "content": self._extract_content(response.choices[0].message),
                 "used_fallback": used_fallback,
                 "model_used": model_used,
             }
@@ -228,6 +228,29 @@ class GatewayClient:
             "used_fallback": used_fallback,
             "model_used": model_name,
         }
+
+    def _extract_content(self, message) -> str:
+        """
+        Extract text content from an LLM response message.
+        Nemotron-3-Nano is a reasoning model: it returns content in the
+        'reasoning' field instead of 'content'. This method checks both.
+        """
+        # Standard content field
+        if message.content:
+            return message.content
+        # Reasoning model: content is in the 'reasoning' attribute
+        reasoning = getattr(message, "reasoning", None)
+        if reasoning:
+            return reasoning
+        # Last resort: check raw dict if available
+        raw = None
+        if hasattr(message, "model_dump"):
+            raw = message.model_dump()
+        elif hasattr(message, "__dict__"):
+            raw = message.__dict__
+        if raw and raw.get("reasoning"):
+            return raw["reasoning"]
+        return message.content or ""
 
     def _check_fallback_used(self, response) -> bool:
         return "gpt" in (response.model or "").lower()
