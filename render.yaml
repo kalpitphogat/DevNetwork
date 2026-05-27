@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: sentinelbrief-backend
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /api/health
+    envVars:
+      - key: SENTINELBRIEF_MOCK
+        value: "false"
+      - key: CRUSOE_API_KEY
+        sync: false
+        placeholder: "Paste your Crusoe Cloud API Key (email eacheampong@crusoe.ai)"
+      - key: CRUSOE_BASE_URL
+        value: "https://api.inference.crusoecloud.com/v1"
+      - key: OPENAI_API_KEY
+        sync: false
+        placeholder: "Paste your OpenAI API Key (used as fallback when Nemotron is down)"
+      - key: DATABASE_URL
+        sync: false
+        placeholder: "Paste your Neon PostgreSQL connection string here"
+      - key: REDIS_URL
+        sync: false
+        placeholder: "Paste your Upstash Redis connection string here"
+      - key: TRUEFOUNDRY_GATEWAY_URL
+        sync: false
+        placeholder: "Paste your TrueFoundry API Gateway URL"
+      - key: TRUEFOUNDRY_API_KEY
+        sync: false
+        placeholder: "Paste your TrueFoundry API Key"
+      - key: TAVILY_API_KEY
+        sync: false
+        placeholder: "Paste your Tavily API Key"

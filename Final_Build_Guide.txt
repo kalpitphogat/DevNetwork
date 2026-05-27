@@ -1,0 +1,905 @@
+SENTINELBRIEF
+
+Resilient Autonomous Competitive Intelligence Agent
+
+Final Build & Demo Guide
+
+─────────────────────────────────────────────
+
+🏆 Crusoe Track
+
+NVIDIA DGX Spark
+
+💰 TrueFoundry Track
+
+$1,000 Cash Prize
+
+🥇 Overall Winner
+
+Amazon Echos + Passes
+
+Deadline: May 28, 2026  ·  10:30 PM IST  ·  $8,000+ Total Prize Pool
+
+DevNetwork [AI + ML] Hackathon 2026  ·  South San Francisco Conference Center + Online
+
+⚡  Why This Wins All Three Prize Tracks
+
+• Targets Crusoe + TrueFoundry + Overall simultaneously — most teams only hit one
+
+• Resilience demo is live and interactive — judges can trigger failures themselves
+
+• Real B2B SaaS with clear $49–$199/mo pricing vs $2,000+/mo incumbents
+
+• Every hackathon judging criterion maps directly to a built feature
+
+Table of Contents
+
+1.  Project Overview
+
+1.1  What is SentinelBrief?
+
+SentinelBrief is a resilient, multi-step autonomous agent that delivers structured competitive intelligence briefings to CEOs and founders. It automates the 4–6 hours per week founders spend manually tracking competitors — and unlike every other AI research agent, it never silently fails.
+
+1.2  The Three Problems It Solves
+
+Problem
+
+How SentinelBrief Solves It
+
+Manual competitor tracking (4–6 hrs/week)
+
+Fully automated end-to-end research pipeline
+
+AI agents that crash or return empty output silently
+
+Explicit chaos handling: fallback routing + checkpoint resume
+
+LLMs hallucinate funding rounds, pricing, exec moves
+
+Every claim tagged VERIFIED / INFERRED / UNVERIFIED with source URLs
+
+1.3  Target Users
+
+CEOs and founders of early-stage startups
+
+Product managers tracking feature parity
+
+Competitive analysts who need weekly intelligence without manual curation
+
+1.4  Business Model
+
+Tier
+
+Price
+
+Includes
+
+vs Competitors
+
+Solo
+
+$49/month
+
+1 company, 5 competitors, weekly
+
+Klue charges $2,000+/mo
+
+Team
+
+$199/month
+
+3 companies, unlimited, daily + Slack
+
+Crayon: enterprise only
+
+Enterprise
+
+$999/month
+
+CRM integration, API access, SLA
+
+Same tools, 5x cheaper
+
+2.  Technical Architecture
+
+2.1  System Layers
+
+Layer
+
+Technology
+
+Role
+
+Frontend
+
+Next.js 14 + Tailwind + shadcn/ui
+
+Input form, live progress feed, briefing viewer, resilience dashboard
+
+API Layer
+
+FastAPI + Uvicorn
+
+Orchestrates agent runs, Redis state, REST + WebSocket
+
+Agent Core
+
+LangGraph (Python)
+
+Multi-node graph: Planner → Fetcher → Synthesizer → Scorer
+
+Resilience Plane
+
+TrueFoundry AI Gateway
+
+All LLM calls routed here — fallback, retry, brownout detection
+
+Inference
+
+Crusoe Cloud (Nemotron-70B)
+
+Research planning + synthesis — two major call sites
+
+Search
+
+Tavily API + BeautifulSoup
+
+Structured results with source URLs for VERIFIED tagging
+
+State
+
+Redis (Upstash free tier)
+
+Checkpoint storage, job queue, WebSocket pub/sub
+
+Database
+
+PostgreSQL (Neon free tier)
+
+Completed briefings, source metadata, run history
+
+2.2  Agent Node Flow
+
+Step-by-step execution:
+
+User submits company profile + up to 5 competitors via the frontend form
+
+FastAPI creates run_id, pushes to Redis queue, opens WebSocket for live updates
+
+Research Planner node calls Nemotron: "Generate a prioritised research plan with 5–7 specific queries"
+
+Parallel Data Fetcher nodes execute: Tavily web search, HackerNews API, GitHub job signals, pricing page scraper
+
+Each result stored with metadata: source URL, timestamp, fetch status (success / failed / partial)
+
+Synthesizer node calls Nemotron: produces full briefing with [VERIFIED] / [INFERRED] / [UNVERIFIED] tags on every claim
+
+Confidence Scorer validates VERIFIED claims have real source URLs; computes section-level scores
+
+Briefing pushed to frontend via WebSocket — user sees live progress throughout
+
+2.3  Resilience Architecture (TrueFoundry Prize)
+
+⚡  This is what wins the TrueFoundry $1,000
+
+• Most teams demo happy-path agents. You demo an agent that cannot die.
+
+• Judges can trigger live failures — this is interactive, not scripted theatre.
+
+• All three failure modes are explicitly built, tested, and demo-able.
+
+Failure Scenario 1 — LLM Brownout (Primary Model Down)
+
+TrueFoundry Gateway detects non-2xx or timeout after 5 seconds
+
+Auto-fallback to Claude Sonnet (configurable secondary)
+
+Briefing header shows: "Primary model unavailable — completed via fallback. Verify synthesis quality."
+
+Run completes — user gets output, not a frozen spinner
+
+Failure Scenario 2 — Data Source MCP Server Down
+
+Fetcher node catches exception, marks source UNAVAILABLE in metadata
+
+Agent continues with available sources — never crashes the run
+
+Affected briefing section shows: "[DATA GAP] Pricing data unavailable for Competitor X — last known: $99/mo (3 days ago)"
+
+Confidence score for that section auto-drops to INFERRED or UNVERIFIED
+
+Failure Scenario 3 — Mid-run API Timeout / Crash
+
+Agent state checkpointed in Redis after every node completes
+
+On restart: resumes from last successful checkpoint, not from scratch
+
+User sees "Resuming from checkpoint..." in the live WebSocket feed
+
+3.  Tech Stack & API Setup
+
+3.1  Complete Stack Reference
+
+Category
+
+Technology
+
+Why This Choice
+
+LLM Inference
+
+Nemotron-70B via Crusoe Cloud
+
+Required for Crusoe prize. Superior multi-step reasoning for structured synthesis.
+
+LLM Gateway
+
+TrueFoundry AI Gateway
+
+Required for TrueFoundry track. Out-of-box fallback routing + retry + brownout detection.
+
+Agent Framework
+
+LangGraph (Python)
+
+Graph-based with native Redis state checkpointing — critical for resume-from-checkpoint.
+
+Backend API
+
+FastAPI + Uvicorn
+
+Async Python, native WebSocket, fast to build.
+
+Frontend
+
+Next.js 14 + Tailwind + shadcn/ui
+
+App router, server components, real-time WebSocket. shadcn gives polish with zero design work.
+
+State / Queue
+
+Redis — Upstash free tier
+
+Checkpoint storage, job queue, WebSocket pub/sub.
+
+Database
+
+PostgreSQL — Neon free tier
+
+Stores completed briefings, user data, source metadata.
+
+Web Research
+
+Tavily API + BeautifulSoup
+
+Tavily returns structured results with source URLs — critical for VERIFIED tagging.
+
+Deployment
+
+Railway/Render (backend) + Vercel (frontend)
+
+Free tier, instant deploy, zero DevOps overhead during hackathon.
+
+3.2  API Quick Reference
+
+Crusoe Cloud — Nemotron
+
+Sign up at crusoe.ai — email eacheampong@crusoe.ai with subject "Hackathon participant" on Day 1
+
+Base URL: https://api.crusoe.ai/v1 (verify in Crusoe console)
+
+Model ID: nvidia/nemotron-70b-instruct (verify exact string in console)
+
+Use LangChain ChatOpenAI with custom base_url — drop-in compatible with LangGraph
+
+TrueFoundry AI Gateway
+
+Join Discord: discord.com/channels/1397947827921096845/1503438187941462268
+
+Configure: Primary = Nemotron/Crusoe, Fallback = Claude Sonnet
+
+Settings: timeout = 8000ms, retry = 3, fallback_on = [timeout, 5xx, rate_limit]
+
+All LangGraph nodes point to the TrueFoundry gateway URL — never directly to Crusoe
+
+Gateway emits structured logs — pull via TrueFoundry SDK for your resilience dashboard
+
+Tavily Search API
+
+Sign up at tavily.com — 1,000 free requests/month
+
+Use search_depth="advanced", max_results=5 per query
+
+Store result URLs as VERIFIED claim sources — this is your core verification signal
+
+HackerNews Algolia API (Free, No Key)
+
+GET http://hn.algolia.com/api/v1/search?query={company}&tags=story&hitsPerPage=5
+
+Free signal for funding/launch news — no signup required
+
+4.  5-Day Build Plan (May 23–28)
+
+🚨  Read Before Starting
+
+• Today is May 23. You have 5 days + submission morning. This plan is tight but achievable.
+
+• Day 4 (Resilience) is SACRED — do not let any earlier day bleed into it.
+
+• If forced to cut features, cut PDF export, scheduling, and history view first.
+
+• The kill-switch demo is your biggest prize moment — protect it above all else.
+
+DAY 1  ·  May 23   
+
+Infrastructure Setup
+
+GOAL: All services talking to each other. Zero features — just plumbing.
+
+☐  Create Crusoe Cloud account, get Nemotron API key, verify a basic completion call works
+
+☐  Set up TrueFoundry account, configure AI Gateway (Nemotron primary + Claude Sonnet fallback)
+
+☐  Initialize LangGraph project — create stub 3-node graph: Planner → Fetcher → Synthesizer
+
+☐  Set up FastAPI backend skeleton with /run endpoint and WebSocket /ws/{run_id}
+
+☐  Initialize Next.js frontend with a simple form that POSTs to /run
+
+☐  Set up Redis (Upstash) and Postgres (Neon) — verify both connections work
+
+☐  Send email to eacheampong@crusoe.ai — "Hackathon participant" in subject line
+
+✅  END OF DAY CHECKPOINT:  Can type a company name → POST to backend → see "run started" in WebSocket → receive stub response.
+
+DAY 2  ·  May 24   
+
+Core Agent Logic
+
+GOAL: Research Planner + Data Fetcher working end to end with real data.
+
+☐  Build Research Planner node: Nemotron prompt returns 5–7 structured queries as JSON
+
+☐  Build Data Fetcher nodes: Tavily search integration — pass each query, get results with URLs
+
+☐  Add HackerNews Algolia API call (free, no key) — startup/funding signal
+
+☐  Add pricing page scraper: BeautifulSoup scraping competitor /pricing URLs
+
+☐  Store all raw results in Postgres with source metadata (URL, timestamp, status)
+
+☐  Wire LangGraph state so each node output persists to Redis checkpoint
+
+✅  END OF DAY CHECKPOINT:  Running the agent fetches real data from the web and stores raw results in the database.
+
+DAY 3  ·  May 25   
+
+Synthesis + Confidence Scoring
+
+GOAL: Nemotron produces a real briefing with confidence tags on every claim.
+
+☐  Build Synthesizer node: craft system prompt with [VERIFIED]/[INFERRED]/[UNVERIFIED] tag instructions
+
+☐  Pass all fetched data as context — structured JSON array with source URLs attached
+
+☐  Iterate Nemotron prompt until tags are consistent (allocate 2–3 hours here)
+
+☐  Build Confidence Scorer node: parse tags, compute section-level scores, validate VERIFIED URLs
+
+☐  Generate full briefing data structure: exec summary, per-competitor sections, strategic implications
+
+☐  Build confidence badge logic: Green (>80% VERIFIED), Amber (mixed), Red (significant UNVERIFIED)
+
+✅  END OF DAY CHECKPOINT:  Agent produces a real briefing with confidence badges attached to every section.
+
+DAY 4  ·  May 26   🔥 CRITICAL PATH
+
+🔥 Resilience Layer — TrueFoundry Prize
+
+GOAL: The agent cannot die. Build AND test every single failure scenario.
+
+☐  Configure TrueFoundry Gateway: primary=Nemotron, fallback=Claude Sonnet, retry=3, timeout=8s
+
+☐  Build admin endpoint: kill switch to forcibly disable Nemotron endpoint for demo purposes
+
+☐  TEST Scenario 1: Kill Nemotron mid-synthesis — verify gateway reroutes, briefing completes with fallback badge
+
+☐  TEST Scenario 2: Kill Tavily data source — verify agent continues, logs DATA GAP in affected sections
+
+☐  TEST Scenario 3: Force mid-run crash — verify resume from last Redis checkpoint on restart
+
+☐  Build gateway log dashboard: real-time routing decisions, fallback events, retry counts visible on screen
+
+☐  Record a clean run of all 3 failure scenarios as video backup (in case live demo breaks)
+
+✅  END OF DAY CHECKPOINT:  All three failure scenarios pass cleanly. Kill switch works. Gateway logs visible in dashboard.
+
+DAY 5  ·  May 27   
+
+Frontend Polish + Demo Prep
+
+GOAL: Dashboard looks like a product, not a hackathon project. Demo is rehearsed.
+
+☐  Input form: company name, website, description, up to 5 competitors with auto-fill
+
+☐  Live progress feed: real-time node-by-node status via WebSocket (Planner ✓, Fetcher 3/5..., Synthesizer running...)
+
+☐  Briefing viewer: executive summary card, per-competitor accordions, confidence badges (green/amber/red)
+
+☐  Claim detail: click any VERIFIED claim → show source URL + snippet popup
+
+☐  Gateway status bar: small indicator showing which LLM is currently active (primary / fallback)
+
+☐  Add Competitive Threat Radar: recharts spider chart — company vs competitors on 5 dimensions
+
+☐  Export: Download as PDF (react-pdf or print-to-PDF)
+
+☐  Pre-run 3 real company pairs: Notion vs Coda, Linear vs Jira, Vercel vs Netlify — cache results
+
+☐  Rehearse the kill-switch demo 5 times until it is perfectly smooth
+
+✅  END OF DAY CHECKPOINT:  Full demo flow works end to end. Looks like a real product. Kill-switch demo is rehearsed and smooth.
+
+DAY 6  ·  May 28   
+
+Demo Video + Devpost Submission
+
+GOAL: Win the prizes on paper. Submit before 10:30 PM IST.
+
+☐  Record demo video with Loom (max 3 minutes) — follow the script in Section 6
+
+☐  Take screenshots: input form, live progress, briefing with badges, gateway failover logs
+
+☐  Write Devpost project description (template in Section 7)
+
+☐  Double-check Built With tags: Nemotron, Crusoe Cloud, TrueFoundry, LangGraph, FastAPI, Next.js, Redis, PostgreSQL, Tavily
+
+☐  Submit to all applicable sponsor tracks explicitly — do not leave any unchecked
+
+☐  Submit before 10:30 PM IST — build in 2-hour buffer, submit by 8:30 PM
+
+✅  END OF DAY CHECKPOINT:  Submitted. All sponsor tracks checked. Video link working. Screenshots uploaded.
+
+5.  Feature Specification
+
+5.1  Input Module
+
+Company name + website URL + 2-sentence description
+
+Up to 5 competitor entries (name + website)
+
+ — Research depth selector
+
+Quick: 3 queries (~15 seconds)
+
+Standard: 7 queries (~40 seconds)
+
+Deep: 12 queries (~90 seconds)
+
+URL validation: check that URLs are reachable before submitting
+
+5.2  Agent Execution Module
+
+Fully async — user can close browser, briefing continues running
+
+Live WebSocket progress: each node status, sources found count, estimated time remaining
+
+Intermediate results visible as they arrive (streaming UX feel)
+
+Run cancellation with partial results saved
+
+Run history: list of past runs with dates, duration, and confidence scores
+
+5.3  Briefing Output Structure
+
+Executive Summary (always at top):
+
+3–5 key intelligence findings from this research run
+
+Overall competitive landscape shift rating: Stable / Shifting / Major Change
+
+Top action item for the week
+
+Per-Competitor Section:
+
+Recent activity: funding, launches, pricing, hires
+
+Strategic signals: job postings analysis (what they are building next based on hiring)
+
+Pricing intelligence: current pricing with change history if available
+
+Confidence badge per section (green / amber / red)
+
+Source citations: numbered list of URLs with fetch timestamps
+
+Strategic Implications:
+
+Nemotron-generated analysis: what the competitive moves mean for your company
+
+Suggested responses and watch items for next week
+
+Always tagged INFERRED — this is synthesis, not retrieved fact
+
+5.4  Resilience Dashboard (Judge Demo View)
+
+Real-time gateway routing table: which LLM is handling current calls
+
+Failure event log: timestamp, failure type, recovery action taken
+
+Fallback activation counter
+
+Data source health grid: green/red indicator per source
+
+Kill switches for demo: [Kill Nemotron]  [Kill Tavily]  [Simulate Timeout]
+
+5.5  Competitive Threat Radar (Visual Differentiator)
+
+Recharts radar / spider chart — your company vs competitors on 5 dimensions:
+
+Pricing Aggressiveness (inferred from pricing page data)
+
+Hiring Velocity (job posting count, last 30 days)
+
+Funding Recency (months since last round)
+
+Product Launch Frequency (changelog / release notes activity)
+
+Social Activity (HackerNews mentions, public sentiment)
+
+Judges remember visuals — this is your most screenshot-able moment
+
+6.  Demo Video Guide — What to Include & Exclude
+
+🎥  Demo Recording Rules
+
+• Tool: Loom — free, instant shareable link, works perfectly with Devpost
+
+• Resolution: 1080p minimum. Duration: exactly 3 minutes (edit ruthlessly)
+
+• Use a REAL company as demo input — never "ACME Corp" or "My Company"
+
+• Rehearse the kill-switch segment 5–10 times before recording
+
+• Have a cached briefing ready so you are not waiting for a live run
+
+6.1  Complete Script (3 Minutes)
+
+Timestamp
+
+Segment
+
+What to Show & Say
+
+0:00–0:20
+
+The Hook
+
+Narrate over split screen or slides: "Founders spend 4–6 hours a week tracking competitors manually. They miss signals. They act on stale data. SentinelBrief does this automatically — and unlike every other AI agent, it never silently fails."
+
+0:20–0:50
+
+Setup & Run
+
+Show the input form. Type in a real company (e.g., Notion). Add 3 competitors (Coda, Obsidian, Roam). Hit Run. Show the live progress feed lighting up node by node — Planner ✓, Fetcher 3/5, Synthesizer running...
+
+0:50–1:20
+
+Briefing Output
+
+The briefing appears. Walk through one competitor section. Point out the green confidence badge: "This pricing data was retrieved directly from Coda.so/pricing two minutes ago — source cited, not hallucinated." Click a VERIFIED claim — show the source URL popup.
+
+1:20–2:00
+
+🔥 MONEY SHOT — Resilience
+
+Switch to Resilience Dashboard. "Now watch what happens when the primary LLM goes down." Hit Kill Nemotron. Show gateway logs rerouting in real time. Show the briefing COMPLETING anyway with the amber fallback badge in the header. "Most agents would have crashed. SentinelBrief kept going."
+
+2:00–2:30
+
+Business Model
+
+"This is a real product. $49/month for founders — vs $2,000+/month for Klue or Crayon. The competitive intelligence market is $5B+ annually. We are targeting the 90% who cannot afford enterprise contracts." Show a simple pricing card.
+
+2:30–3:00
+
+Stack Callout
+
+"Under the hood: Nemotron on Crusoe Cloud for deep reasoning — it outperforms GPT-4o on multi-step synthesis. TrueFoundry AI Gateway for production-grade resilience. LangGraph for stateful agent orchestration." End on the briefing dashboard with the radar chart visible.
+
+6.2  ✅ Must Include in Demo
+
+Element
+
+Why It Matters
+
+Prize It Targets
+
+Live input form → real company run
+
+Shows it is a working product, not a mockup
+
+Overall
+
+WebSocket live progress feed
+
+Proves async agent execution — technical credibility
+
+Overall
+
+Confidence badges on briefing claims
+
+Shows VeracityAI differentiator — judges remember it
+
+Overall
+
+Click VERIFIED claim → source URL popup
+
+Proves the sourcing is real, not fabricated
+
+Overall
+
+Kill Nemotron → gateway reroutes → briefing completes
+
+THE single most important 30 seconds of your demo
+
+TrueFoundry
+
+Fallback badge in briefing header
+
+Visual proof that recovery happened transparently
+
+TrueFoundry
+
+Gateway log dashboard on screen
+
+Makes the routing decision visible and impressive
+
+TrueFoundry
+
+Nemotron model name called out in narration
+
+Judges must hear "Nemotron on Crusoe Cloud"
+
+Crusoe
+
+Competitive Threat Radar chart
+
+Most screenshot-able, shareable visual in your demo
+
+Overall
+
+Pricing card ($49 vs $2,000)
+
+Judges from eBay/PayPal/Capital One understand this instantly
+
+Overall
+
+6.3  ❌ Do NOT Include in Demo
+
+Element
+
+Why to Exclude
+
+Raw code or terminal output
+
+Wastes precious demo time. Judge version of the demo is about the product, not the code. Code goes in the GitHub repo.
+
+Database schema or backend internals
+
+Not visually compelling. Mention in Devpost write-up instead.
+
+Full briefing scroll-through (all sections)
+
+Too slow. Show ONE competitor section in depth, not all five.
+
+PDF export feature
+
+Minor UX feature — not a prize-winning moment. Skip in demo.
+
+Run history / scheduling toggle
+
+Future features, not core differentiators. Cut from demo if time is tight.
+
+Explanation of LangGraph internals
+
+Judge-level technical depth: mention LangGraph by name in stack slide only.
+
+Waiting in real time for a full live run
+
+Pre-run and cache briefings. A 45-second spinner kills demo momentum. Show cached output while a live one runs in the background.
+
+Any UI that looks broken or incomplete
+
+If a feature is not polished, hide it. Better to show 4 great screens than 6 mediocre ones.
+
+Competitor comparison beyond one deep example
+
+Go deep on one competitor pair (Notion vs Coda). Wide shallow demo is less impressive.
+
+6.4  Kill-Switch Demo — Rehearsal Checklist
+
+🎬  Practice This 5–10 Times Before Recording
+
+• Step 1: Start a live agent run in the demo environment
+
+• Step 2: Navigate to Resilience Dashboard (have it open in a second tab)
+
+• Step 3: Hit Kill Nemotron while the Synthesizer node is mid-run
+
+• Step 4: Show the gateway log — "PRIMARY TIMEOUT → FALLBACK ACTIVATED → claude-sonnet-4"
+
+• Step 5: Show the briefing completing with the amber fallback badge in the header
+
+• Step 6: Say exactly: "Most agents crash here. SentinelBrief kept going."
+
+• Contingency: if live demo fails, cut to the pre-recorded video of this segment
+
+7.  Devpost Submission Template
+
+7.1  Project Title & Tagline
+
+Title: SentinelBrief — Resilient Autonomous Competitive Intelligence
+
+Tagline: The competitive intelligence agent that never silently fails — powered by Nemotron on Crusoe, hardened by TrueFoundry.
+
+7.2  Inspiration
+
+Every founder we spoke to spends 4–6 hours per week tracking competitors manually. Worse, when they try to use AI agents for this, those agents fail silently — returning partial output with no warning, leaving the user with a false sense of completeness. We built SentinelBrief to solve both problems: automate the research loop, and make the agent genuinely resilient to infrastructure chaos.
+
+7.3  What It Does
+
+SentinelBrief takes a company profile and up to five competitors, then autonomously researches funding events, product changes, pricing updates, and hiring signals across the web. It synthesizes findings into a structured weekly briefing, tagging every claim as VERIFIED (source cited), INFERRED (cross-referenced), or UNVERIFIED (model knowledge only). Every LLM call routes through TrueFoundry AI Gateway — so if Nemotron browns out mid-run, the agent automatically falls back to a secondary model and continues. No crashes. No silent failures. No spinner that never resolves.
+
+7.4  How We Built It
+
+LangGraph manages the multi-node agent graph with Redis checkpointing for crash recovery. Nemotron on Crusoe Cloud Managed Inference handles research planning and synthesis — its multi-step reasoning produces significantly better structured output than general-purpose models. TrueFoundry AI Gateway sits in front of every LLM call, handling routing, fallback, and retry logic. The frontend is Next.js with real-time progress via WebSocket. Tavily API provides web search with source URLs, feeding directly into the VERIFIED confidence tagging pipeline.
+
+7.5  Challenges
+
+Getting Nemotron to consistently emit structured confidence tags required significant prompt engineering — the model naturally wants to write prose, not tagged claims. We solved this with a two-pass approach: synthesis in pass one, tag validation and correction in pass two. The checkpoint-based resume was also non-trivial since LangGraph's state serialization required custom handling for our source metadata objects.
+
+7.6  Built With (exact tags)
+
+Nemotron, Crusoe Cloud, TrueFoundry AI Gateway, LangGraph, FastAPI, Next.js, Redis, PostgreSQL, Tavily API, Python, TypeScript
+
+8.  Judging Criteria Mapping
+
+8.1  Overall Hackathon Judging
+
+Criterion
+
+What Judges See
+
+Your Advantage
+
+Progress (working product)
+
+End-to-end: input → research → briefing → export. Live resilience demo with real failures judges can trigger themselves.
+
+Incremental 5-day plan ensures working product on every day. Day 4 fully dedicated to resilience — most teams skip this.
+
+Concept (real problem)
+
+Founders/CEOs spending 4–6 hrs/week on manual research — a real, felt pain every judge in the room has experienced personally.
+
+Clean B2B framing: $49 vs $2,000+/month incumbents resonates immediately with judges from Capital One, PayPal, eBay, Google.
+
+Feasibility (can it be a startup?)
+
+Clear $49–$199/month SaaS tiers. Comparable products charge $2K+/month. $5B+ market. Named enterprise path.
+
+Post-hackathon roadmap (Section 9) shows Month 1 to Month 6+ expansion — judges who ask "what's next?" get a credible answer.
+
+8.2  Sponsor Track Alignment
+
+Sponsor
+
+Their Challenge
+
+How SentinelBrief Wins It
+
+Crusoe (NVIDIA DGX Spark)
+
+Build a Hermes/NemoClaw agent on Nemotron via Crusoe Managed Inference
+
+Nemotron is the core reasoning engine for BOTH research planning AND synthesis — two major call sites. Demo explicitly calls out Crusoe Cloud in architecture.
+
+TrueFoundry ($1,000 Cash)
+
+Build an agent that handles MCP errors, LLM brownouts, and infrastructure chaos gracefully
+
+Every single failure scenario they listed is built and demo-able with live kill switches. Gateway logs are visible on screen during judging.
+
+Overall Winner
+
+Progress + Concept + Feasibility
+
+All three criteria hit strongly. Full working product. Real B2B use case. Clear startup trajectory. Polished UI.
+
+9.  Risks & Mitigations
+
+Risk
+
+Probability
+
+Mitigation
+
+Crusoe account approval delayed
+
+HIGH — act on Day 1
+
+Email eacheampong@crusoe.ai immediately with "Hackathon participant" in subject. Have OpenAI as full emergency backup, not just for the planner node.
+
+Nemotron outputs inconsistent confidence tags
+
+MEDIUM
+
+Two-pass prompting (generate then validate). Regex fallback parser catches malformed tags. Worst case: all claims tagged INFERRED — briefing still works.
+
+Competitor websites block scraping
+
+HIGH
+
+Use Tavily search snippets instead of direct scraping for most content. Only scrape /pricing pages — almost never blocked.
+
+TrueFoundry gateway adds too much latency
+
+LOW
+
+Run Fetcher nodes in parallel. Total latency budget: 45–60 seconds for a full briefing is acceptable.
+
+Not enough time to polish frontend
+
+LOW
+
+Use shadcn/ui — professional components with zero design work. Cut history and scheduling before cutting resilience dashboard.
+
+Demo breaks during live judging
+
+LOW
+
+Pre-run 3 cached briefings. The kill-switch demo is scripted — not live random. Have pre-recorded video of the resilience segment as fallback.
+
+Scope too large, Day 4 skipped
+
+MEDIUM
+
+Day 4 is SACRED. Drop PDF export, scheduling, and history before touching Day 4 scope.
+
+10.  Post-Hackathon Roadmap
+
+Include this in your Devpost submission — the Overall judging criterion explicitly includes "Could this become a startup?" Judges want to see that you have thought beyond the hackathon.
+
+Phase
+
+Timeline
+
+Focus
+
+Validate
+
+Month 1–2
+
+10 free beta users from your network. Weekly briefing quality review. Pricing validation.
+
+Monetize
+
+Month 3–4
+
+Launch $49 Solo + $199 Team tiers. Stripe integration. Slack delivery.
+
+Expand
+
+Month 6+
+
+Salesforce/HubSpot CRM integration. Historical delta view. API access for RevOps teams.
+
+🚀  Final Thought
+
+• You are not building a hackathon demo. You are building the first version of a company.
+
+• Every design decision should ask: "Would a real CEO trust this with their strategic decisions?"
+
+• If the answer is yes — you have already won, before the judges even score you.
+
+• Submit by 8:30 PM IST on May 28 — never cut it to the last minute.
