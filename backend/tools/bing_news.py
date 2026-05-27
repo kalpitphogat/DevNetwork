@@ -47,8 +47,11 @@ async def search_bing_news(company: str, max_results: int = 6) -> dict:
         return {"results": [], "source": "bing_news", "confidence": "failed",
                 "error": "Search killed by operator"}
 
-    query = f"{company} news funding product launch 2026"
-    url = "https://www.bing.com/news/search"
+    # Bing News RSS returns best results with a short query.
+    # Long keyword-stuffed queries return 0 results.
+    # Quoting the name keeps Bing focused when the name is also a common word.
+    query = f'"{company}"'
+    url   = "https://www.bing.com/news/search"
     params = {"q": query, "format": "rss"}
 
     # Try with retry on transient failures

@@ -54,10 +54,10 @@ async def search_competitor(company_name: str, query_type: str) -> dict:
         }
 
     query_map = {
-        "news":    f"{company_name} news funding announcement partnership 2025 2026",
-        "product": f"{company_name} product launch feature update roadmap 2026",
-        "pricing": f"{company_name} pricing plans cost change enterprise discount",
-        "hiring":  f"{company_name} hiring jobs careers engineering AI 2026",
+        "news":    f'"{company_name}" company software news 2026',
+        "product": f'"{company_name}" product launch feature update 2026',
+        "pricing": f'"{company_name}" pricing plans cost enterprise',
+        "hiring":  f'"{company_name}" hiring jobs careers engineering 2026',
     }
 
     query = query_map.get(query_type, f"{company_name} {query_type}")
@@ -147,7 +147,7 @@ async def _tavily_search(query: str, query_type: str) -> dict:
                 "api_key": api_key,
                 "query": query,
                 "search_depth": "advanced",
-                "topic": "news" if query_type == "news" else "general",
+                "topic": "general",
                 "max_results": 6,
                 "include_answer": True,
                 "include_raw_content": False,

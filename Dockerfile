@@ -23,8 +23,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source files
 COPY . .
 
-# Expose uvicorn port
-EXPOSE 8000
+# Render injects PORT (default 10000). Fall back to 8000 for local dev.
+EXPOSE ${PORT:-8000}
 
-# Launch server
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Use sh -c so ${PORT:-8000} shell expansion works at container start
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

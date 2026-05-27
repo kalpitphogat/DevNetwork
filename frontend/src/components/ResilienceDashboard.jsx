@@ -95,9 +95,9 @@ export default function ResilienceDashboard() {
             <div className={`gateway-indicator ${chaosStatus.search_killed ? 'indicator-down' : 'indicator-up'}`}>
               <div className={`status-dot ${chaosStatus.search_killed ? 'dot-red' : 'dot-green'}`} />
               <div>
-                <div className="indicator-label">Search Sources</div>
+                <div className="indicator-label">Search Sources (5)</div>
                 <div className="indicator-value">
-                  {chaosStatus.search_killed ? '❌ Tavily DOWN' : '✅ Tavily ONLINE'}
+                  {chaosStatus.search_killed ? '❌ All Sources DOWN' : '✅ All Sources ONLINE'}
                 </div>
               </div>
             </div>
@@ -159,16 +159,24 @@ export default function ResilienceDashboard() {
         <div className="resilience-card health-grid-card">
           <h3>📡 Data Source Health</h3>
           <div className="health-grid">
-            {['News', 'Product', 'Pricing', 'Hiring'].map(source => (
-              <div key={source} className={`health-item ${chaosStatus.search_killed ? 'health-down' : 'health-up'}`}>
-                <div className={`health-dot ${chaosStatus.search_killed ? 'dot-red' : 'dot-green'}`} />
-                <span>{source}</span>
+            {[
+              { label: 'Tavily Search',  paid: true  },
+              { label: 'Google News',    paid: false },
+              { label: 'Bing News',      paid: false },
+              { label: 'HackerNews',     paid: false },
+              { label: 'Reddit',         paid: false },
+              { label: 'Product Intel',  paid: true  },
+              { label: 'Pricing Intel',  paid: true  },
+              { label: 'Hiring Intel',   paid: true  },
+            ].map(({ label, paid }) => (
+              <div
+                key={label}
+                className={`health-item ${(paid && chaosStatus.search_killed) ? 'health-down' : 'health-up'}`}
+              >
+                <div className={`health-dot ${(paid && chaosStatus.search_killed) ? 'dot-red' : 'dot-green'}`} />
+                <span>{label}</span>
               </div>
             ))}
-            <div className="health-item health-up">
-              <div className="health-dot dot-green" />
-              <span>HackerNews</span>
-            </div>
           </div>
         </div>
 
