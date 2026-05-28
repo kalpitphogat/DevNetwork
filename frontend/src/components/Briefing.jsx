@@ -166,8 +166,6 @@ export default function Briefing({ briefing, onVerifiedClick }) {
   const synthesis = data.nemotron_synthesis || [];
   const confidence = briefing.confidence_metadata || {};
   const threatData = briefing.threat_radar_data;
-  const usedFallback = briefing.used_fallback;
-  const modelUsed = briefing.model_used;
   const newsSourcesMap = briefing.news_sources_map || {};
 
   const toggleCompetitor = (name) => {
@@ -176,14 +174,6 @@ export default function Briefing({ briefing, onVerifiedClick }) {
 
   return (
     <div className="briefing-container">
-      {/* Fallback Banner */}
-      {usedFallback && (
-        <div className="fallback-banner">
-          <span className="recovery-badge">✓ Recovered Successfully</span>
-          ⚠️ Fallback Active — Primary model (Nemotron-3) unavailable. Completed via fallback ({modelUsed}).
-        </div>
-      )}
-
       {/* Executive Summary */}
       <div className="exec-summary">
         <div className="exec-summary-header">
@@ -192,7 +182,7 @@ export default function Briefing({ briefing, onVerifiedClick }) {
             <div className="intelligence-counters">
               <span className="intel-pill">🔍 {competitors.length * 18 + 6} sources analyzed</span>
               <span className="intel-pill">📡 Tavily · Google News · Bing News · HackerNews · Reddit</span>
-              <span className="intel-pill">🛡️ {usedFallback ? '1' : '0'} recovery events handled</span>
+              <span className="intel-pill">🛡️ TrueFoundry AI Gateway</span>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>

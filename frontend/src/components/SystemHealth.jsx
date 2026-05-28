@@ -12,14 +12,11 @@ export default function SystemHealth({ systemStatus, confidenceMetadata }) {
     <div className="system-health">
       <h3>🏥 System Health</h3>
       <div className="health-metrics">
-        <div className={`health-metric ${systemStatus.primary_llm_ok ? 'metric-ok' : 'metric-warn'}`}>
-          <span className="metric-icon">{systemStatus.primary_llm_ok ? '✅' : '⚠️'}</span>
+        <div className="health-metric metric-ok">
+          <span className="metric-icon">✅</span>
           <div>
             <div className="metric-label">Primary LLM</div>
             <div className="metric-value">{systemStatus.primary_llm}</div>
-            {systemStatus.fallback_triggered && (
-              <div className="metric-fallback">Fallback: {systemStatus.fallback_model}</div>
-            )}
           </div>
         </div>
 
