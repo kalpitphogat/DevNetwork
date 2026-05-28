@@ -149,6 +149,54 @@ Respond ONLY with the JSON object, no markdown fences."""
                         formatted.append(f"    Source URL: {url}")
         return "\n".join(formatted)
 
+    def _normalize_briefing(self, data: dict) -> dict:
+        """Normalize Nemotron output to the expected schema.
+
+        Nemotron sometimes returns a flat structure with executive_summary fields
+        at the top level instead of nested. This method detects and fixes that,
+        ensuring the frontend always receives a consistent shape.
+        """
+        if not isinstance(data, dict):
+            return self._empty_briefing()
+
+        EXEC_KEYS = {"key_findings", "landscape_shift", "top_action", "overall_confidence"}
+
+        # Case 1: correct schema — executive_summary already nested
+        if "executive_summary" in data and isinstance(data["executive_summary"], dict):
+            # Ensure required keys exist at minimum
+            data.setdefault("competitors", [])
+            data.setdefault("strategic_implications", [])
+            data.setdefault("nemotron_synthesis", [])
+            return data
+
+        # Case 2: flat schema — exec fields at top level (Nemotron skips nesting)
+        if EXEC_KEYS & set(data.keys()):
+            exec_summary = {
+                "key_findings":     data.pop("key_findings", []),
+                "landscape_shift":  data.pop("landscape_shift", "STABLE"),
+                "top_action":       data.pop("top_action", ""),
+                "overall_confidence": data.pop("overall_confidence", "amber"),
+            }
+            return {
+                "executive_summary":    exec_summary,
+                "competitors":          data.pop("competitors", []),
+                "strategic_implications": data.pop("strategic_implications", []),
+                "nemotron_synthesis":   data.pop("nemotron_synthesis", []),
+                **data,   # carry through any extra keys
+            }
+
+        # Case 3: unknown shape — return as-is with safe defaults
+        data.setdefault("executive_summary", {
+            "key_findings": [],
+            "landscape_shift": "STABLE",
+            "top_action": "",
+            "overall_confidence": "amber",
+        })
+        data.setdefault("competitors", [])
+        data.setdefault("strategic_implications", [])
+        data.setdefault("nemotron_synthesis", [])
+        return data
+
     def _parse_response(self, content: str) -> dict:
         """Parse JSON from LLM response.
 
@@ -158,6 +206,10 @@ Respond ONLY with the JSON object, no markdown fences."""
           2. Strip markdown fences then parse
           3. Extract largest {...} block (handles reasoning prefix/suffix)
           4. Walk forward from first '{' to find valid JSON
+
+        Every successfully-parsed result is passed through _normalize_briefing
+        to handle Nemotron's tendency to return flat key_findings at top level
+        instead of nested under executive_summary.
         """
         if not content:
             return self._empty_briefing()
@@ -166,7 +218,7 @@ Respond ONLY with the JSON object, no markdown fences."""
 
         # Strategy 1: direct parse
         try:
-            return json.loads(cleaned)
+            return self._normalize_briefing(json.loads(cleaned))
         except json.JSONDecodeError:
             pass
 
@@ -176,22 +228,48 @@ Respond ONLY with the JSON object, no markdown fences."""
             lines = [l for l in lines if not l.strip().startswith("```")]
             stripped = "\n".join(lines).strip()
             try:
-                return json.loads(stripped)
+                return self._normalize_briefing(json.loads(stripped))
             except json.JSONDecodeError:
                 pass
 
-        # Strategy 3: extract from first '{' to last '}' — handles reasoning prefix
-        first_brace = content.find('{')
-        last_brace  = content.rfind('}')
-        if first_brace != -1 and last_brace > first_brace:
-            candidate = content[first_brace:last_brace + 1]
-            try:
-                return json.loads(candidate)
-            except json.JSONDecodeError:
-                pass
+        # Strategy 3: find the real JSON object — search for '{' followed by a known
+        # top-level key, skipping any reasoning-prefix text Nemotron prepends.
+        import re as _re
+        JSON_START_RE = _re.compile(r'\{\s*"(?:executive_summary|competitors|key_findings|landscape_shift)"')
+        m = JSON_START_RE.search(content)
+        json_start = m.start() if m else content.find('{')
+
+        if json_start != -1:
+            # Use depth-tracking to find the REAL closing brace of this JSON block,
+            # not rfind('}') which would overshoot into trailing reasoning text.
+            depth3 = 0
+            real_end = -1
+            for i, ch in enumerate(content[json_start:], json_start):
+                if ch == '{':
+                    depth3 += 1
+                elif ch == '}':
+                    depth3 -= 1
+                    if depth3 == 0:
+                        real_end = i
+                        break
+
+            if real_end != -1:
+                block = content[json_start:real_end + 1]
+                # Strategy 3a: parse as-is
+                try:
+                    return self._normalize_briefing(json.loads(block))
+                except json.JSONDecodeError:
+                    pass
+                # Strategy 3b: Nemotron uses "..." as a placeholder for omitted sections
+                # (e.g. the competitors array).  Remove the placeholder AND its leading
+                # comma so the JSON is valid even when competitors were not output.
+                cleaned_block = _re.sub(r',\s*\n(\s*\.\.\.\s*\n)', '\n', block)
+                try:
+                    return self._normalize_briefing(json.loads(cleaned_block))
+                except json.JSONDecodeError:
+                    pass
 
         # Strategy 4: scan for JSON block boundaries (tolerates trailing text)
-        import re as _re
         for match in _re.finditer(r'\{', content):
             start = match.start()
             depth = 0
@@ -202,9 +280,31 @@ Respond ONLY with the JSON object, no markdown fences."""
                     depth -= 1
                     if depth == 0:
                         try:
-                            return json.loads(content[start:i + 1])
+                            return self._normalize_briefing(json.loads(content[start:i + 1]))
                         except json.JSONDecodeError:
                             break
+
+        # Strategy 5: partial JSON recovery — extract complete competitor objects
+        # from anywhere in the raw content (works even when outer JSON is malformed).
+        if json_start != -1:
+            partial = content[json_start:]
+            competitors = []
+            for comp_m in _re.finditer(r'\{\s*"name"\s*:\s*"[^"]+"\s*,\s*"urgency"', partial):
+                c_start = comp_m.start()
+                depth2 = 0
+                for j, ch in enumerate(partial[c_start:], c_start):
+                    if ch == '{':
+                        depth2 += 1
+                    elif ch == '}':
+                        depth2 -= 1
+                        if depth2 == 0:
+                            try:
+                                competitors.append(json.loads(partial[c_start:j + 1]))
+                            except json.JSONDecodeError:
+                                pass
+                            break
+            if competitors:
+                return self._normalize_briefing({'competitors': competitors})
 
         return {
                 "executive_summary": {
