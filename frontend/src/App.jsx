@@ -6,6 +6,7 @@ import AgentStatus from './components/AgentStatus';
 import Briefing, { SourcePopup } from './components/Briefing';
 import SystemHealth from './components/SystemHealth';
 import ResilienceDashboard from './components/ResilienceDashboard';
+import PricingCard from './components/PricingCard';
 
 export default function App() {
   const [activeTab, setActiveTab]         = useState('briefing');
@@ -151,6 +152,7 @@ export default function App() {
                   systemStatus={briefing.system_status}
                   confidenceMetadata={briefing.confidence_metadata}
                 />
+                <PricingCard />
               </>
             )}
           </div>
