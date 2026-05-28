@@ -124,7 +124,7 @@ class GatewayClient:
                 messages=messages,
                 stream=False,
                 temperature=0.7,
-                max_tokens=8192,
+                max_tokens=16384,
             )
             latency = (time.time() - start) * 1000
             used_fallback = self._check_fallback_used(response)
