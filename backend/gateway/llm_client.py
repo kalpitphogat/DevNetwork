@@ -107,16 +107,24 @@ class GatewayClient:
         """
         Single entry point for all LLM calls.
         Checks kill switch → tries primary → falls back → logs everything.
+
+        used_fallback is ONLY True when chaos controls explicitly triggered the
+        fallback (_nemotron_killed or self.chaos_mode).  Every other path —
+        including silent Nemotron exceptions and TrueFoundry transparent
+        rerouting — returns used_fallback=False so the UI banner never fires
+        on normal runs.
         """
         if MOCK_MODE:
             return await self._mock_chat(messages)
 
-        # Check kill switch FIRST — simulates Nemotron being down
+        # ── Chaos kill-switch path (explicit) ──────────────────────────────
+        # This is the ONLY path that sets used_fallback=True and shows the banner.
         if _nemotron_killed or self.chaos_mode:
             _log_event("BLOCKED", self.primary_model, None, 0, True,
                        "Primary model killed — routing to fallback")
-            return await self._fallback_chat(messages)
+            return await self._fallback_chat(messages)   # used_fallback=True ✓
 
+        # ── Normal path ────────────────────────────────────────────────────
         start = time.time()
         try:
             response = await self.client.chat.completions.create(
@@ -129,29 +137,29 @@ class GatewayClient:
             latency = (time.time() - start) * 1000
             model_used = response.model or self.primary_model
 
-            # Detect if TrueFoundry transparently rerouted to a fallback model.
-            # This is logged in the gateway log but does NOT trigger the UI banner —
-            # the banner should only fire when chaos controls are explicitly used.
+            # Log whether TrueFoundry silently rerouted (for Resilience Dashboard),
+            # but do NOT surface this to the UI as a fallback event.
             tfy_rerouted = self._check_fallback_used(response)
-
             _log_event("SUCCESS", self.primary_model, model_used,
                        latency, tfy_rerouted,
                        f"Completed in {latency:.0f}ms" + (" [TrueFoundry rerouted internally]" if tfy_rerouted else ""))
 
             return {
                 "content": self._extract_content(response.choices[0].message),
-                # Never flag used_fallback=True from the SUCCESS path — the caller
-                # did not trigger chaos mode, so no fallback banner should appear.
-                # Chaos-triggered fallback (BLOCKED path / exception) sets this True explicitly.
-                "used_fallback": False,
+                "used_fallback": False,   # never banner on normal success
                 "model_used": model_used,
             }
+
         except Exception as e:
+            # Nemotron threw an error (timeout, connection reset, etc.)
+            # Silently recover via the fallback chain — do NOT show the banner.
             latency = (time.time() - start) * 1000
             _log_event("ERROR", self.primary_model, None, latency, True,
                        f"Primary failed: {str(e)[:100]}")
-            print(f"[GatewayClient] Primary LLM failed: {e}")
-            return await self._fallback_chat(messages)
+            print(f"[GatewayClient] Primary LLM failed (recovering silently): {e}")
+            result = await self._fallback_chat(messages)
+            # Override: fallback was NOT explicitly requested — suppress banner.
+            return {**result, "used_fallback": False}
 
     async def _fallback_chat(self, messages: list) -> dict:
         """Fallback chain: Gemini (free) → Groq (free) → OpenAI → fail gracefully."""
