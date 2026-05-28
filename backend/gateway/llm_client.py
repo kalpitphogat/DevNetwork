@@ -147,9 +147,38 @@ class GatewayClient:
             return await self._fallback_chat(messages)
 
     async def _fallback_chat(self, messages: list) -> dict:
-        """Fallback chain: Groq (free) → OpenAI → fail gracefully."""
+        """Fallback chain: Gemini (free) → Groq (free) → OpenAI → fail gracefully."""
 
-        # ── Attempt 1: Groq (free, fast, no quota issues) ──────────────────
+        # ── Attempt 1: Google Gemini (free, no credit card) ────────────────
+        gemini_key = os.getenv("GEMINI_API_KEY", "")
+        if gemini_key:
+            start = time.time()
+            try:
+                gemini_client = AsyncOpenAI(
+                    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                    api_key=gemini_key,
+                )
+                response = await gemini_client.chat.completions.create(
+                    model="gemini-2.0-flash",
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=4096,
+                )
+                latency = (time.time() - start) * 1000
+                _log_event("FALLBACK", "gemini-2.0-flash", "gemini-2.0-flash", latency, True,
+                           f"Gemini fallback completed in {latency:.0f}ms")
+                return {
+                    "content": response.choices[0].message.content,
+                    "used_fallback": True,
+                    "model_used": "Gemini 2.0 Flash (fallback)",
+                }
+            except Exception as e:
+                latency = (time.time() - start) * 1000
+                _log_event("ERROR", "gemini-2.0-flash", None, latency, True,
+                           f"Gemini fallback failed: {str(e)[:100]}")
+                print(f"[GatewayClient] Gemini fallback failed: {e}")
+
+        # ── Attempt 2: Groq Llama (free) ────────────────────────────────────
         groq_key = os.getenv("GROQ_API_KEY", "")
         if groq_key:
             start = time.time()
@@ -178,7 +207,7 @@ class GatewayClient:
                            f"Groq fallback failed: {str(e)[:100]}")
                 print(f"[GatewayClient] Groq fallback failed: {e}")
 
-        # ── Attempt 2: OpenAI gpt-4o-mini ──────────────────────────────────
+        # ── Attempt 3: OpenAI gpt-4o-mini ───────────────────────────────────
         start = time.time()
         try:
             fallback_client = AsyncOpenAI(
