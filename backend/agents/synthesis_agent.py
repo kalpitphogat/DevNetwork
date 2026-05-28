@@ -150,20 +150,63 @@ Respond ONLY with the JSON object, no markdown fences."""
         return "\n".join(formatted)
 
     def _parse_response(self, content: str) -> dict:
-        """Parse JSON from LLM response."""
+        """Parse JSON from LLM response.
+
+        Nemotron-3-Nano is a reasoning model — it may prefix the JSON with a
+        chain-of-thought reasoning block. We try several extraction strategies:
+          1. Direct parse (clean JSON response)
+          2. Strip markdown fences then parse
+          3. Extract largest {...} block (handles reasoning prefix/suffix)
+          4. Walk forward from first '{' to find valid JSON
+        """
         if not content:
             return self._empty_briefing()
 
         cleaned = content.strip()
-        if cleaned.startswith("```"):
-            lines = cleaned.split("\n")
-            lines = [l for l in lines if not l.strip().startswith("```")]
-            cleaned = "\n".join(lines)
 
+        # Strategy 1: direct parse
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError:
-            return {
+            pass
+
+        # Strategy 2: strip markdown fences
+        if "```" in cleaned:
+            lines = cleaned.split("\n")
+            lines = [l for l in lines if not l.strip().startswith("```")]
+            stripped = "\n".join(lines).strip()
+            try:
+                return json.loads(stripped)
+            except json.JSONDecodeError:
+                pass
+
+        # Strategy 3: extract from first '{' to last '}' — handles reasoning prefix
+        first_brace = content.find('{')
+        last_brace  = content.rfind('}')
+        if first_brace != -1 and last_brace > first_brace:
+            candidate = content[first_brace:last_brace + 1]
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                pass
+
+        # Strategy 4: scan for JSON block boundaries (tolerates trailing text)
+        import re as _re
+        for match in _re.finditer(r'\{', content):
+            start = match.start()
+            depth = 0
+            for i, ch in enumerate(content[start:], start):
+                if ch == '{':
+                    depth += 1
+                elif ch == '}':
+                    depth -= 1
+                    if depth == 0:
+                        try:
+                            return json.loads(content[start:i + 1])
+                        except json.JSONDecodeError:
+                            break
+
+        return {
                 "executive_summary": {
                     "key_findings": ["Raw analysis (JSON parsing failed) [UNVERIFIED]"],
                     "landscape_shift": "STABLE",

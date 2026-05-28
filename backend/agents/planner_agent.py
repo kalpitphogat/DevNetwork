@@ -73,22 +73,44 @@ Generate {config['num_queries']} prioritized research queries."""
         }
 
     def _parse_queries(self, content: str, competitors: list) -> list:
-        """Parse Nemotron's response into structured queries."""
+        """Parse Nemotron's response into structured queries.
+
+        Nemotron-3-Nano is a reasoning model — strips reasoning prefix before
+        attempting JSON extraction, then falls back to bracket-scan.
+        """
         if not content:
             return self._default_queries(competitors)
 
+        # Strategy 1: direct parse
         cleaned = content.strip()
-        if cleaned.startswith("```"):
-            lines = cleaned.split("\n")
-            lines = [l for l in lines if not l.strip().startswith("```")]
-            cleaned = "\n".join(lines)
-
         try:
-            queries = json.loads(cleaned)
-            if isinstance(queries, list):
-                return queries
+            result = json.loads(cleaned)
+            if isinstance(result, list):
+                return result
         except json.JSONDecodeError:
             pass
+
+        # Strategy 2: strip markdown fences
+        if "```" in cleaned:
+            lines = cleaned.split("\n")
+            stripped = "\n".join(l for l in lines if not l.strip().startswith("```")).strip()
+            try:
+                result = json.loads(stripped)
+                if isinstance(result, list):
+                    return result
+            except json.JSONDecodeError:
+                pass
+
+        # Strategy 3: extract first [...] array block (handles reasoning prefix)
+        first_bracket = content.find('[')
+        last_bracket  = content.rfind(']')
+        if first_bracket != -1 and last_bracket > first_bracket:
+            try:
+                result = json.loads(content[first_bracket:last_bracket + 1])
+                if isinstance(result, list):
+                    return result
+            except json.JSONDecodeError:
+                pass
 
         return self._default_queries(competitors)
 
