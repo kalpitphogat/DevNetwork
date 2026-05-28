@@ -19,7 +19,10 @@ export default function App() {
   const [activeSourceUrl, setActiveSourceUrl] = useState(null);
   const [isMockMode, setIsMockMode]       = useState(false);
 
-  const API = process.env.NEXT_PUBLIC_API_URL || '';
+  // Always use relative URLs — our Edge proxy (/api/[...path]/route.js) handles routing.
+  // Do NOT use NEXT_PUBLIC_API_URL: it gets baked into the bundle at build-time and
+  // points to the dead Render backend, causing 503 for all users.
+  const API = '';
 
   // Detect mock mode from backend health endpoint
   useEffect(() => {

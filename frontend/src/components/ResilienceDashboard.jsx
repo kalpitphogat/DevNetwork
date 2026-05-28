@@ -21,9 +21,13 @@ export default function ResilienceDashboard() {
   const logContainerRef = useRef(null);
   const isNearBottomRef = useRef(true);
 
+  // Always use relative URLs — Edge proxy (/api/[...path]/route.js) handles routing.
+  // NEXT_PUBLIC_API_URL intentionally not used: it gets baked into the bundle and
+  // would point to the dead Render backend, causing 503 for all users.
+  const API = '';
+
   // Poll chaos status and gateway logs every 2 seconds
   useEffect(() => {
-    const API = process.env.NEXT_PUBLIC_API_URL || '';
     const fetchData = async () => {
       try {
         const [statusRes, logsRes] = await Promise.all([
@@ -60,7 +64,6 @@ export default function ResilienceDashboard() {
   const handleChaos = async (action) => {
     setLoading(prev => ({ ...prev, [action]: true }));
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || '';
       await fetch(`${API}/api/chaos/${action}`, { method: 'POST' });
       // Refresh status immediately
       const res = await fetch(`${API}/api/chaos/status`);
