@@ -9,18 +9,22 @@ import os
 import json
 import redis
 
-REDIS_URL = os.getenv("REDIS_URL", "")
-
 _in_memory_checkpoints = {}
+
+
+def _redis_url() -> str:
+    """Read REDIS_URL at call time so late-loaded .env values are picked up."""
+    return os.getenv("REDIS_URL", "")
 
 
 def get_redis_client():
     """Get a Redis client instance if REDIS_URL is configured."""
-    if not REDIS_URL:
+    url = _redis_url()
+    if not url:
         return None
     try:
         # upstash connection via standard redis client
-        client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+        client = redis.Redis.from_url(url, decode_responses=True)
         # Ping to verify connection
         client.ping()
         return client
