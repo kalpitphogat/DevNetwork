@@ -147,7 +147,38 @@ class GatewayClient:
             return await self._fallback_chat(messages)
 
     async def _fallback_chat(self, messages: list) -> dict:
-        """Direct fallback to OpenAI when primary fails."""
+        """Fallback chain: Groq (free) → OpenAI → fail gracefully."""
+
+        # ── Attempt 1: Groq (free, fast, no quota issues) ──────────────────
+        groq_key = os.getenv("GROQ_API_KEY", "")
+        if groq_key:
+            start = time.time()
+            try:
+                groq_client = AsyncOpenAI(
+                    base_url="https://api.groq.com/openai/v1",
+                    api_key=groq_key,
+                )
+                response = await groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=4096,
+                )
+                latency = (time.time() - start) * 1000
+                _log_event("FALLBACK", "groq/llama-3.3-70b", "groq/llama-3.3-70b", latency, True,
+                           f"Groq fallback completed in {latency:.0f}ms")
+                return {
+                    "content": response.choices[0].message.content,
+                    "used_fallback": True,
+                    "model_used": "Llama-3.3-70B via Groq (fallback)",
+                }
+            except Exception as e:
+                latency = (time.time() - start) * 1000
+                _log_event("ERROR", "groq/llama-3.3-70b", None, latency, True,
+                           f"Groq fallback failed: {str(e)[:100]}")
+                print(f"[GatewayClient] Groq fallback failed: {e}")
+
+        # ── Attempt 2: OpenAI gpt-4o-mini ──────────────────────────────────
         start = time.time()
         try:
             fallback_client = AsyncOpenAI(
@@ -161,8 +192,7 @@ class GatewayClient:
             )
             latency = (time.time() - start) * 1000
             _log_event("FALLBACK", "gpt-4o-mini", "gpt-4o-mini", latency, True,
-                       f"Fallback completed in {latency:.0f}ms")
-
+                       f"OpenAI fallback completed in {latency:.0f}ms")
             return {
                 "content": response.choices[0].message.content,
                 "used_fallback": True,
@@ -171,7 +201,7 @@ class GatewayClient:
         except Exception as e:
             latency = (time.time() - start) * 1000
             _log_event("ERROR", "gpt-4o-mini", None, latency, True,
-                       f"Fallback also failed: {str(e)[:100]}")
+                       f"All fallbacks failed: {str(e)[:100]}")
             return {
                 "content": None,
                 "error": str(e),
