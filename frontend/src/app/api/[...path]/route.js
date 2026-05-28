@@ -13,7 +13,7 @@
 export const runtime = 'edge';
 
 const BACKEND_URL =
-  process.env.BACKEND_URL || 'https://moody-wasp-7.loca.lt';
+  process.env.BACKEND_URL || 'https://sentinelbrief-backend.onrender.com';
 
 async function handler(request, { params }) {
   const resolvedParams = await params;

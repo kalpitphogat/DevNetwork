@@ -12,25 +12,7 @@
 
 Every founder spends **4–6 hours per week** tracking competitors manually — scouring news sites, Reddit threads, job boards, and pricing pages. When they turn to AI agents for help, those agents **fail silently**: returning partial output with no warning, hallucinating claims without sources, and crashing mid-run with no recovery. SentinelBrief was born to solve both problems — delivering autonomous competitive research that is *reliable, verifiable, and resilient*.
 
-<<<<<<< Updated upstream
 ## 🔍 What It Does
-=======
-```
-          Vercel [Static Hosting]
-                    ↓ (API Proxy Rewrites)
-          Render [FastAPI Service]
-                    ↓ (LangGraph Checkpoints / Neon DB Storage)
-    ┌───────────────┴───────────────┐
-    ▼                               ▼
-Neon [PostgreSQL]           Upstash [Redis]
-(Briefings Storage)       (Checkpoints & Queues)
-    │
-    ▼
-TrueFoundry AI Gateway
-    ↓ (Fallback Routing & Failover)
-hack-crusoe/Nemotron-3-Nano-30B-A3B-FP8 (Crusoe Cloud) ──► openai/gpt-4o (Fallback)
-```
->>>>>>> Stashed changes
 
 Give SentinelBrief a company profile and up to **5 competitors**. It autonomously:
 
@@ -211,7 +193,6 @@ DevNetwork/
 
 ## ☁️ Production Deployment
 
-<<<<<<< Updated upstream
 ### Backend → Render
 1. Push to GitHub → Sign in to [Render.com](https://render.com) → **New → Blueprint** → select this repo.
 2. Render reads `render.yaml` and creates the service. Set environment variables when prompted.
@@ -230,7 +211,3 @@ DevNetwork/
 ---
 
 <p align="center"><b>SentinelBrief</b> — Because competitive intelligence shouldn't fail silently.</p>
-=======
-*   **Crusoe Cloud (NVIDIA DGX Track)**: Core reasoning executed using `hack-crusoe/Nemotron-3-Nano-30B-A3B-FP8` on Crusoe Cloud Managed Inference across both Research Planning and Synthesis nodes.
-*   **TrueFoundry (Resilient Agents Track)**: Robust failover, error checkpoints, and event logs routing transparently via TrueFoundry Gateway to protect critical runs.
->>>>>>> Stashed changes
