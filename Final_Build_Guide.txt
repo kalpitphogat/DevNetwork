@@ -112,7 +112,7 @@ Role
 
 Frontend
 
-Next.js 14 + Tailwind + shadcn/ui
+Next.js 15 + Custom CSS (Glassmorphic Dark Theme)
 
 Input form, live progress feed, briefing viewer, resilience dashboard
 
@@ -120,11 +120,11 @@ API Layer
 
 FastAPI + Uvicorn
 
-Orchestrates agent runs, Redis state, REST + WebSocket
+Orchestrates agent runs, Redis state, REST + SSE streaming
 
 Agent Core
 
-LangGraph (Python)
+Asyncio Orchestrator (Python)
 
 Multi-node graph: Planner → Fetcher → Synthesizer → Scorer
 
@@ -136,7 +136,7 @@ All LLM calls routed here — fallback, retry, brownout detection
 
 Inference
 
-Crusoe Cloud (Nemotron-70B)
+Crusoe Cloud (Nemotron-3-Nano-30B-A3B-FP8)
 
 Research planning + synthesis — two major call sites
 
@@ -150,7 +150,7 @@ State
 
 Redis (Upstash free tier)
 
-Checkpoint storage, job queue, WebSocket pub/sub
+Checkpoint storage, job queue, state caching
 
 Database
 
@@ -164,7 +164,7 @@ Step-by-step execution:
 
 User submits company profile + up to 5 competitors via the frontend form
 
-FastAPI creates run_id, pushes to Redis queue, opens WebSocket for live updates
+FastAPI creates run_id, pushes to Redis queue, opens SSE stream for live updates
 
 Research Planner node calls Nemotron: "Generate a prioritised research plan with 5–7 specific queries"
 
@@ -176,7 +176,7 @@ Synthesizer node calls Nemotron: produces full briefing with [VERIFIED] / [INFER
 
 Confidence Scorer validates VERIFIED claims have real source URLs; computes section-level scores
 
-Briefing pushed to frontend via WebSocket — user sees live progress throughout
+Briefing pushed to frontend via SSE streaming — user sees live progress throughout
 
 2.3  Resilience Architecture (TrueFoundry Prize)
 
@@ -240,21 +240,19 @@ Required for TrueFoundry track. Out-of-box fallback routing + retry + brownout d
 
 Agent Framework
 
-LangGraph (Python)
-
 Graph-based with native Redis state checkpointing — critical for resume-from-checkpoint.
 
 Backend API
 
 FastAPI + Uvicorn
 
-Async Python, native WebSocket, fast to build.
+Async Python, native SSE streaming, fast to build.
 
 Frontend
 
-Next.js 14 + Tailwind + shadcn/ui
+Next.js 15 + Custom CSS (Glassmorphic Dark Theme)
 
-App router, server components, real-time WebSocket. shadcn gives polish with zero design work.
+App router, real-time SSE streaming. Custom glassmorphic design gives premium polish.
 
 State / Queue
 
@@ -286,11 +284,11 @@ Crusoe Cloud — Nemotron
 
 Sign up at crusoe.ai — email eacheampong@crusoe.ai with subject "Hackathon participant" on Day 1
 
-Base URL: https://api.crusoe.ai/v1 (verify in Crusoe console)
+Base URL: https://api.inference.crusoecloud.com/v1 (verify in Crusoe console)
 
-Model ID: nvidia/nemotron-70b-instruct (verify exact string in console)
+Model ID: hack-crusoe/Nemotron-3-Nano-30B-A3B-FP8 (verify exact string in console)
 
-Use LangChain ChatOpenAI with custom base_url — drop-in compatible with LangGraph
+Use OpenAI AsyncClient with custom base_url — drop-in compatible with asyncio orchestrator
 
 TrueFoundry AI Gateway
 
@@ -300,7 +298,7 @@ Configure: Primary = Nemotron/Crusoe, Fallback = Claude Sonnet
 
 Settings: timeout = 8000ms, retry = 3, fallback_on = [timeout, 5xx, rate_limit]
 
-All LangGraph nodes point to the TrueFoundry gateway URL — never directly to Crusoe
+All agent LLM calls point to the TrueFoundry gateway URL — never directly to Crusoe
 
 Gateway emits structured logs — pull via TrueFoundry SDK for your resilience dashboard
 
@@ -340,9 +338,9 @@ GOAL: All services talking to each other. Zero features — just plumbing.
 
 ☐  Set up TrueFoundry account, configure AI Gateway (Nemotron primary + Claude Sonnet fallback)
 
-☐  Initialize LangGraph project — create stub 3-node graph: Planner → Fetcher → Synthesizer
+☐  Initialize asyncio orchestrator project — create stub 3-node pipeline: Planner → Fetcher → Synthesizer
 
-☐  Set up FastAPI backend skeleton with /run endpoint and WebSocket /ws/{run_id}
+☐  Set up FastAPI backend skeleton with /run endpoint and SSE streaming /api/brief
 
 ☐  Initialize Next.js frontend with a simple form that POSTs to /run
 
@@ -350,7 +348,7 @@ GOAL: All services talking to each other. Zero features — just plumbing.
 
 ☐  Send email to eacheampong@crusoe.ai — "Hackathon participant" in subject line
 
-✅  END OF DAY CHECKPOINT:  Can type a company name → POST to backend → see "run started" in WebSocket → receive stub response.
+✅  END OF DAY CHECKPOINT:  Can type a company name → POST to backend → see "run started" in SSE stream → receive stub response.
 
 DAY 2  ·  May 24   
 
@@ -368,7 +366,7 @@ GOAL: Research Planner + Data Fetcher working end to end with real data.
 
 ☐  Store all raw results in Postgres with source metadata (URL, timestamp, status)
 
-☐  Wire LangGraph state so each node output persists to Redis checkpoint
+☐  Wire orchestrator state so each node output persists to Redis checkpoint
 
 ✅  END OF DAY CHECKPOINT:  Running the agent fetches real data from the web and stores raw results in the database.
 
@@ -422,7 +420,7 @@ GOAL: Dashboard looks like a product, not a hackathon project. Demo is rehearsed
 
 ☐  Input form: company name, website, description, up to 5 competitors with auto-fill
 
-☐  Live progress feed: real-time node-by-node status via WebSocket (Planner ✓, Fetcher 3/5..., Synthesizer running...)
+☐  Live progress feed: real-time node-by-node status via SSE (Planner ✓, Fetcher 3/5..., Synthesizer running...)
 
 ☐  Briefing viewer: executive summary card, per-competitor accordions, confidence badges (green/amber/red)
 
@@ -452,7 +450,7 @@ GOAL: Win the prizes on paper. Submit before 10:30 PM IST.
 
 ☐  Write Devpost project description (template in Section 7)
 
-☐  Double-check Built With tags: Nemotron, Crusoe Cloud, TrueFoundry, LangGraph, FastAPI, Next.js, Redis, PostgreSQL, Tavily
+☐  Double-check Built With tags: Nemotron, Crusoe Cloud, TrueFoundry, FastAPI, Next.js, Redis, PostgreSQL, Tavily, asyncio, SSE
 
 ☐  Submit to all applicable sponsor tracks explicitly — do not leave any unchecked
 
@@ -482,7 +480,7 @@ URL validation: check that URLs are reachable before submitting
 
 Fully async — user can close browser, briefing continues running
 
-Live WebSocket progress: each node status, sources found count, estimated time remaining
+Live SSE streaming progress: each node status, sources found count, estimated time remaining
 
 Intermediate results visible as they arrive (streaming UX feel)
 
@@ -604,7 +602,7 @@ Business Model
 
 Stack Callout
 
-"Under the hood: Nemotron on Crusoe Cloud for deep reasoning — it outperforms GPT-4o on multi-step synthesis. TrueFoundry AI Gateway for production-grade resilience. LangGraph for stateful agent orchestration." End on the briefing dashboard with the radar chart visible.
+"Under the hood: Nemotron on Crusoe Cloud for deep reasoning — it outperforms GPT-4o on multi-step synthesis. TrueFoundry AI Gateway for production-grade resilience. Asyncio orchestrator for stateful agent coordination with checkpoint resume." End on the briefing dashboard with the radar chart visible.
 
 6.2  ✅ Must Include in Demo
 
@@ -620,7 +618,7 @@ Shows it is a working product, not a mockup
 
 Overall
 
-WebSocket live progress feed
+SSE live progress feed
 
 Proves async agent execution — technical credibility
 
@@ -700,9 +698,9 @@ Run history / scheduling toggle
 
 Future features, not core differentiators. Cut from demo if time is tight.
 
-Explanation of LangGraph internals
+Explanation of orchestrator internals
 
-Judge-level technical depth: mention LangGraph by name in stack slide only.
+Judge-level technical depth: mention the asyncio orchestrator in stack slide only.
 
 Waiting in real time for a full live run
 
@@ -752,15 +750,15 @@ SentinelBrief takes a company profile and up to five competitors, then autonomou
 
 7.4  How We Built It
 
-LangGraph manages the multi-node agent graph with Redis checkpointing for crash recovery. Nemotron on Crusoe Cloud Managed Inference handles research planning and synthesis — its multi-step reasoning produces significantly better structured output than general-purpose models. TrueFoundry AI Gateway sits in front of every LLM call, handling routing, fallback, and retry logic. The frontend is Next.js with real-time progress via WebSocket. Tavily API provides web search with source URLs, feeding directly into the VERIFIED confidence tagging pipeline.
+An asyncio-based orchestrator manages the multi-node agent pipeline with Redis checkpointing for crash recovery. Nemotron on Crusoe Cloud Managed Inference handles research planning and synthesis — its multi-step reasoning produces significantly better structured output than general-purpose models. TrueFoundry AI Gateway sits in front of every LLM call, handling routing, fallback, and retry logic. The frontend is Next.js with real-time progress via SSE streaming. Tavily API provides web search with source URLs, feeding directly into the VERIFIED confidence tagging pipeline.
 
 7.5  Challenges
 
-Getting Nemotron to consistently emit structured confidence tags required significant prompt engineering — the model naturally wants to write prose, not tagged claims. We solved this with a two-pass approach: synthesis in pass one, tag validation and correction in pass two. The checkpoint-based resume was also non-trivial since LangGraph's state serialization required custom handling for our source metadata objects.
+Getting Nemotron to consistently emit structured confidence tags required significant prompt engineering — the model naturally wants to write prose, not tagged claims. We solved this with a two-pass approach: synthesis in pass one, tag validation and correction in pass two. The checkpoint-based resume was also non-trivial since the orchestrator's state serialization required custom handling for our source metadata objects.
 
 7.6  Built With (exact tags)
 
-Nemotron, Crusoe Cloud, TrueFoundry AI Gateway, LangGraph, FastAPI, Next.js, Redis, PostgreSQL, Tavily API, Python, TypeScript
+Nemotron, Crusoe Cloud, TrueFoundry AI Gateway, FastAPI, Next.js, Redis, PostgreSQL, Tavily API, Python, asyncio, SSE
 
 8.  Judging Criteria Mapping
 
@@ -852,7 +850,7 @@ Not enough time to polish frontend
 
 LOW
 
-Use shadcn/ui — professional components with zero design work. Cut history and scheduling before cutting resilience dashboard.
+Use custom CSS (glassmorphic dark theme) — professional look with zero external component dependencies. Cut history and scheduling before cutting resilience dashboard.
 
 Demo breaks during live judging
 

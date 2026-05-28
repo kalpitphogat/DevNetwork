@@ -101,7 +101,11 @@ class GatewayClient:
         ) if not MOCK_MODE else None
 
         self.primary_model = "hack-crusoe/Nemotron-3-Nano-30B-A3B-FP8"
+<<<<<<< Updated upstream
         self.fallback_model = "gpt-4o-mini"
+=======
+        self.fallback_model = "openai/gpt-4o"
+>>>>>>> Stashed changes
 
     async def chat(self, messages: list, stream: bool = False) -> dict:
         """

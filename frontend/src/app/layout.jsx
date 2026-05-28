@@ -2,7 +2,7 @@ import '../index.css';
 
 export const metadata = {
   title: 'SentinelBrief — Resilient Autonomous Competitive Intelligence',
-  description: 'A resilient multi-agent competitive intelligence briefing system powered by Nemotron-70B on Crusoe Cloud, managed by TrueFoundry AI Gateway, Upstash Redis, and Neon PostgreSQL.',
+  description: 'A resilient multi-agent competitive intelligence briefing system powered by Nemotron on Crusoe Cloud Managed Inference, managed by TrueFoundry AI Gateway, Upstash Redis, and Neon PostgreSQL.',
 };
 
 export default function RootLayout({ children }) {
