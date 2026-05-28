@@ -111,6 +111,11 @@ export default function App() {
             <span className="fallback-active-pill">
               <span className="fallback-active-dot" />
               🟠 Fallback Active: {fallbackModel || 'GPT-4o'} handling synthesis
+              <button
+                className="fallback-dismiss-btn"
+                onClick={() => setFallbackActive(false)}
+                title="Dismiss"
+              >×</button>
             </span>
           )}
           <div className="header-tech">

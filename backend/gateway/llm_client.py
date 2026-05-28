@@ -335,7 +335,14 @@ class GatewayClient:
         return ""
 
     def _check_fallback_used(self, response) -> bool:
-        return "gpt" in (response.model or "").lower()
+        model = (response.model or "").lower()
+        # TrueFoundry performed transparent failover if the returned model is GPT
+        fallback = "gpt" in model
+        if fallback:
+            print(f"[GatewayClient] ⚠️  TrueFoundry transparent fallback detected: response.model={response.model!r}")
+        else:
+            print(f"[GatewayClient] ✅ Primary model confirmed: response.model={response.model!r}")
+        return fallback
 
     def _get_mock_planner_response(self, context: str) -> str:
         return json.dumps([
