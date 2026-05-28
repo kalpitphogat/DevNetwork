@@ -23,11 +23,12 @@ export default function ResilienceDashboard() {
 
   // Poll chaos status and gateway logs every 2 seconds
   useEffect(() => {
+    const API = process.env.NEXT_PUBLIC_API_URL || '';
     const fetchData = async () => {
       try {
         const [statusRes, logsRes] = await Promise.all([
-          fetch('/api/chaos/status'),
-          fetch('/api/gateway-logs'),
+          fetch(`${API}/api/chaos/status`),
+          fetch(`${API}/api/gateway-logs`),
         ]);
         if (statusRes.ok) setChaosStatus(await statusRes.json());
         if (logsRes.ok) setGatewayLogs(await logsRes.json());
@@ -59,9 +60,10 @@ export default function ResilienceDashboard() {
   const handleChaos = async (action) => {
     setLoading(prev => ({ ...prev, [action]: true }));
     try {
-      await fetch(`/api/chaos/${action}`, { method: 'POST' });
+      const API = process.env.NEXT_PUBLIC_API_URL || '';
+      await fetch(`${API}/api/chaos/${action}`, { method: 'POST' });
       // Refresh status immediately
-      const res = await fetch('/api/chaos/status');
+      const res = await fetch(`${API}/api/chaos/status`);
       if (res.ok) setChaosStatus(await res.json());
     } catch (e) {
       console.error(`Chaos action ${action} failed:`, e);

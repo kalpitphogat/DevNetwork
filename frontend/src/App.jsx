@@ -19,9 +19,11 @@ export default function App() {
   const [activeSourceUrl, setActiveSourceUrl] = useState(null);
   const [isMockMode, setIsMockMode]       = useState(false);
 
+  const API = process.env.NEXT_PUBLIC_API_URL || '';
+
   // Detect mock mode from backend health endpoint
   useEffect(() => {
-    fetch('/api/health')
+    fetch(`${API}/api/health`)
       .then(r => r.json())
       .then(d => setIsMockMode(d.mock_mode === true))
       .catch(() => {});
@@ -37,7 +39,7 @@ export default function App() {
     setActiveSourceUrl(null);
 
     try {
-      const response = await fetch('/api/brief', {
+      const response = await fetch(`${API}/api/brief`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
