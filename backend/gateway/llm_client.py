@@ -127,16 +127,23 @@ class GatewayClient:
                 max_tokens=16384,
             )
             latency = (time.time() - start) * 1000
-            used_fallback = self._check_fallback_used(response)
             model_used = response.model or self.primary_model
 
+            # Detect if TrueFoundry transparently rerouted to a fallback model.
+            # This is logged in the gateway log but does NOT trigger the UI banner —
+            # the banner should only fire when chaos controls are explicitly used.
+            tfy_rerouted = self._check_fallback_used(response)
+
             _log_event("SUCCESS", self.primary_model, model_used,
-                       latency, used_fallback,
-                       f"Completed in {latency:.0f}ms")
+                       latency, tfy_rerouted,
+                       f"Completed in {latency:.0f}ms" + (" [TrueFoundry rerouted internally]" if tfy_rerouted else ""))
 
             return {
                 "content": self._extract_content(response.choices[0].message),
-                "used_fallback": used_fallback,
+                # Never flag used_fallback=True from the SUCCESS path — the caller
+                # did not trigger chaos mode, so no fallback banner should appear.
+                # Chaos-triggered fallback (BLOCKED path / exception) sets this True explicitly.
+                "used_fallback": False,
                 "model_used": model_used,
             }
         except Exception as e:
