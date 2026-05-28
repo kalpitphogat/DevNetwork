@@ -101,7 +101,7 @@ class GatewayClient:
         ) if not MOCK_MODE else None
 
         self.primary_model = "hack-crusoe/Nemotron-3-Nano-30B-A3B-FP8"
-        self.fallback_model = "gpt-4o"
+        self.fallback_model = "gpt-4o-mini"
 
     async def chat(self, messages: list, stream: bool = False) -> dict:
         """
@@ -154,23 +154,23 @@ class GatewayClient:
                 api_key=os.getenv("OPENAI_API_KEY", ""),
             )
             response = await fallback_client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.7,
                 max_tokens=4096,
             )
             latency = (time.time() - start) * 1000
-            _log_event("FALLBACK", "gpt-4o", "gpt-4o", latency, True,
+            _log_event("FALLBACK", "gpt-4o-mini", "gpt-4o-mini", latency, True,
                        f"Fallback completed in {latency:.0f}ms")
 
             return {
                 "content": response.choices[0].message.content,
                 "used_fallback": True,
-                "model_used": "gpt-4o (fallback)",
+                "model_used": "GPT-4o-mini (fallback)",
             }
         except Exception as e:
             latency = (time.time() - start) * 1000
-            _log_event("ERROR", "gpt-4o", None, latency, True,
+            _log_event("ERROR", "gpt-4o-mini", None, latency, True,
                        f"Fallback also failed: {str(e)[:100]}")
             return {
                 "content": None,
@@ -232,25 +232,48 @@ class GatewayClient:
     def _extract_content(self, message) -> str:
         """
         Extract text content from an LLM response message.
-        Nemotron-3-Nano is a reasoning model: it returns content in the
-        'reasoning' field instead of 'content'. This method checks both.
+        Nemotron-3-Nano is a reasoning model: it may return content in
+        non-standard fields. We check every known location.
         """
-        # Standard content field
+        # Standard content field (most models)
         if message.content:
             return message.content
-        # Reasoning model: content is in the 'reasoning' attribute
-        reasoning = getattr(message, "reasoning", None)
-        if reasoning:
-            return reasoning
-        # Last resort: check raw dict if available
-        raw = None
+
+        # Dump to dict for comprehensive field inspection
+        raw = {}
         if hasattr(message, "model_dump"):
-            raw = message.model_dump()
+            try:
+                raw = message.model_dump() or {}
+            except Exception:
+                pass
         elif hasattr(message, "__dict__"):
-            raw = message.__dict__
-        if raw and raw.get("reasoning"):
-            return raw["reasoning"]
-        return message.content or ""
+            raw = message.__dict__ or {}
+
+        # Log all available keys for debugging
+        print(f"[GatewayClient] _extract_content: message.content empty. Raw keys: {list(raw.keys())}")
+
+        # Try every field name reasoning models might use
+        for field in ("reasoning_content", "reasoning", "thinking", "thinking_content",
+                      "extended_thinking", "chain_of_thought", "scratchpad", "text"):
+            # Direct attribute
+            val = getattr(message, field, None)
+            if val:
+                print(f"[GatewayClient] Found content in attribute '{field}' ({len(val)} chars)")
+                return val
+            # Dict key
+            val = raw.get(field)
+            if val:
+                print(f"[GatewayClient] Found content in raw['{field}'] ({len(val)} chars)")
+                return val
+
+        # Try any string value in the raw dict that looks like JSON
+        for k, v in raw.items():
+            if isinstance(v, str) and len(v) > 20 and ('{' in v or '"' in v):
+                print(f"[GatewayClient] Found string content in raw['{k}'] ({len(v)} chars)")
+                return v
+
+        print(f"[GatewayClient] WARNING: All extraction strategies failed. Full raw dump: {raw}")
+        return ""
 
     def _check_fallback_used(self, response) -> bool:
         return "gpt" in (response.model or "").lower()
